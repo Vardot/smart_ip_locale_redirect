@@ -1,0 +1,8 @@
+name: 'Smart IP locale redirect'
+type: module
+description: 'Overrides language negotiation and redirects users to a languge depending on their IP.'
+core: 8.x
+package: 'Location'
+dependencies:
+  - smart_ip
+  - locale

@@ -1,0 +1,34 @@
+<?php
+
+/**
+ * @file
+ * Contains smart_ip_locale_redirect.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_help().
+ */
+function smart_ip_locale_redirect_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the smart_ip_locale_redirect module.
+    case 'help.page.smart_ip_locale_redirect':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Overrides language negotiation and redirects users to a languge depending on their IP.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_language_switch_links_alter().
+ */
+function smart_ip_locale_redirect_language_switch_links_alter(array &$links, $type, Url $url) {
+  foreach ($links as &$link) {
+    $link['query']['update_hl'] = $link["language"]->getId();
+  }
+}

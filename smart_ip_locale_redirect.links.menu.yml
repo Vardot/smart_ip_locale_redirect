@@ -1,0 +1,6 @@
+smart_ip_locale_redirect.smart_ip_locale_redirect_admin_form:
+  title: 'Smart IP Locale Redirect'
+  route_name: smart_ip_locale_redirect.smart_ip_locale_redirect_admin_form
+  description: 'Smart IP Locale Redirect settings.'
+  parent: system.admin_config_search
+  weight: 99
