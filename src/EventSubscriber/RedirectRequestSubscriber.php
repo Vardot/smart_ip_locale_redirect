@@ -104,7 +104,7 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
    */
   public function __construct(LanguageManagerInterface $language_manager, ConfigFactoryInterface $config, AliasManagerInterface $alias_manager, ModuleHandlerInterface $module_handler, EntityTypeManagerInterface $entity_type_manager, RedirectChecker $checker, RequestContext $context, InboundPathProcessorInterface $path_processor) {
     $this->languageManager = $language_manager;
-    $this->config = $config->get('redirect.settings');
+    $this->config = $config->get('smart_ip_locale_redirect.settings');
     $this->aliasManager = $alias_manager;
     $this->moduleHandler = $module_handler;
     $this->entityTypeManager = $entity_type_manager;
@@ -170,17 +170,24 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
       // or language prefix, this function is not reached anymore and
       // caching works as expected.
       \Drupal::service('page_cache_kill_switch')->trigger();
+
+      // Set the cookie based on the configuration.
+      $cookie_settings = $this->config->get('cookie_settings') ?: [];
+      $cookie_duration = $cookie_settings['duration'] ?: 432000;
+      $cookie_path = $cookie_settings['path'] ?: '/';
+      $cookie_domain = $cookie_settings['domain'] ?: '';
+
       $update_hl = $request->get('update_hl');
       if (isset($update_hl) && $update_hl != '') {
         $langcode = $update_hl;
-        setcookie('smart_ip_hl', $langcode, time() + 432000, '/');
+        setcookie('smart_ip_hl', $langcode, time() + $cookie_duration, $cookie_path, $cookie_domain);
       }
 
       if ($request->cookies->get('smart_ip_hl')) {
         $langcode = $request->cookies->get('smart_ip_hl');
       }
       else {
-        $countries = \Drupal::config('smart_ip_locale_redirect.settings')->get('mappings') ?: [];
+        $countries = $this->config->get('mappings') ?: [];
         $client_ip = $request->getClientIp();
         $location = SmartIp::query($client_ip);
         $country_code = isset($location['countryCode']) ? strtolower($location['countryCode']) : '';
@@ -190,7 +197,8 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
             $langcode = $countries[$country_code];
           }
         }
-        setcookie('smart_ip_hl', $langcode, time() + 432000, '/');
+
+        setcookie('smart_ip_hl', $langcode, time() + $cookie_duration, $cookie_path, $cookie_domain);
       }
       if ($current_language_id == $langcode && ($request->getPathInfo() != '/' && $request->getPathInfo() != '')) {
         return;
@@ -209,7 +217,7 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
       }
     }
     catch (RedirectLoopException $e) {
-      \Drupal::logger('redirect')->warning('Redirect loop identified at %path for redirect %rid', ['%path' => $e->getPath(), '%rid' => $e->getRedirectId()]);
+      \Drupal::logger('smart_ip_locale_redirect')->warning('Redirect loop identified at %path for redirect %rid', ['%path' => $e->getPath(), '%rid' => $e->getRedirectId()]);
       $response = new Response();
       $response->setStatusCode(503);
       $response->setContent('Service unavailable');
