@@ -41,3 +41,9 @@ CONFIGURATION
  2. Go to Smart IP Locale Redirect Settings to map each country code to 
     a site language. (/admin/config/search/smart_ip_locale_redirect)
  3. Specify user agents to be excluded from redirection such as Googlebot and bingbot.
+
+ IMPORTANT NOTE
+ ---------------
+ You will not able to change the site langcode from browser navigation address because the cookie will keep redirecting to the langcode that stored in its value, so you have to either:
+ 1. Use the language switcher to change the site language.
+ 2. Or add 'update_hl=LANGCODE' to the path in the browser navigation address.
