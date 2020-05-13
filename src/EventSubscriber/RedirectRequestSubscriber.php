@@ -19,6 +19,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Routing\RequestContext;
 use Drupal\smart_ip_maxmind_geoip2_web_service\WebServiceUtility;
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\smart_ip\SmartIp;
 
 /**
  * Redirect subscriber for controller requests.
@@ -130,10 +131,6 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
    *   The event to process.
    */
   public function onKernelRequestCheckRedirect(GetResponseEvent $event) {
-    // Check if the client ip address on the excluded adresses then do nothing.
-    if ($this->isExcluded()) {
-      return;
-    }
 
     // Get a clone of the request. During inbound processing the request
     // can be altered. Allowing this here can lead to unexpected behavior.
@@ -184,13 +181,13 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
       }
       else {
         $countries = \Drupal::config('smart_ip_locale_redirect.settings')->get('mappings') ?: [];
-        $client_ip = \Drupal::request()->getClientIp();
-        $location = WebServiceUtility::getGeolocation($client_ip);
-        $current_country_code = isset($location['country']['iso_code']) ? strtolower($location['country']['iso_code']) : '';
-        if (!empty($current_country_code)) {
+        $client_ip = $request->getClientIp();
+        $location = SmartIp::query($client_ip);
+        $country_code = isset($location['countryCode']) ? strtolower($location['countryCode']) : '';
+        if (!empty($country_code)) {
           // Check if a language is set for the determined country.
-          if (!empty($countries[$current_country_code])) {
-            $langcode = $countries[$current_country_code];
+          if (!empty($countries[$country_code])) {
+            $langcode = $countries[$country_code];
           }
         }
         setcookie('smart_ip_hl', $langcode, time() + 432000, '/');
@@ -230,22 +227,6 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
       $cache_metadata = CacheableMetadata::createFromRenderArray($build);
       $response->addCacheableDependency($cache_metadata);
       $event->setResponse($response);
-    }
-  }
-
-  /**
-   * Check if the client ip address is excluded from being redirected.
-   *
-   * @return bool
-   *   TRUE means skip the redirect process
-   */
-  public function isExcluded() {
-    $client_ip = \Drupal::request()->getClientIp();
-    // Skip querying if IP is set to be exploded by config.
-    $excluded_ips = \Drupal::configFactory()->get('smart_ip.settings')->get('excluded_ips');
-    $excluded_ips = explode(',', $excluded_ips);
-    if (is_array($excluded_ips) && in_array($client_ip, $excluded_ips)) {
-      return TRUE;
     }
   }
 
