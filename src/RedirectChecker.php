@@ -84,14 +84,15 @@ class RedirectChecker {
    *   TRUE if redirect may be performed.
    */
   public function canRedirect(Request $request, $route_name = NULL) {
+    // If the user role is NOT in the roles to geolocate then exit and do nothing.
+    if (!$this->isRoleToGeoLocate()) {
+      return FALSE;
+    }
+
     $can_redirect = TRUE;
 
     if (isset($route_name)) {
       $route = $this->routeProvider->getRouteByName($route_name);
-      if ($this->configFactory->get('redirect.settings')->get('access_check')) {
-        // Do not redirect if is a protected page.
-        $can_redirect = $this->accessManager->checkNamedRoute($route_name, [], $this->account);
-      }
     }
     else {
       $route = $request->attributes->get(RouteObjectInterface::ROUTE_OBJECT);
@@ -126,13 +127,6 @@ class RedirectChecker {
       // Do not redirect in offline or maintenance mode.
       $can_redirect = FALSE;
     }
-    elseif ($request->query->has('destination')) {
-      $can_redirect = FALSE;
-    }
-    elseif ($this->configFactory->get('redirect.settings')->get('ignore_admin_path') && isset($route)) {
-      // Do not redirect on admin paths.
-      $can_redirect &= !(bool) $route->getOption('_admin_route');
-    }
 
     $excluded_user_agents = $this->configFactory->get('smart_ip_locale_redirect.settings')->get('excluded_user_agents');
     if ($excluded_user_agents != '') {
@@ -146,6 +140,26 @@ class RedirectChecker {
     }
 
     return $can_redirect;
+  }
+
+  /**
+   * Check if the user role in the smart ip roles to geolocate setting.
+   *
+   * @return bool
+   *   TRUE to redirect the user to the locale language otherwise do not geolocate.
+   */
+  public function isRoleToGeoLocate() {
+    $dontGeolocate  = FALSE;
+    $config         = $this->configFactory->get('smart_ip.settings');
+    $rolesGeolocate = $config->get('roles_to_geolocate');
+    $userRoles      = $this->account->getRoles();
+    foreach ($userRoles as $userRole) {
+      if (isset($rolesGeolocate[$userRole]) && $rolesGeolocate[$userRole]) {
+        // This user role is in the list of "Roles to Geolocate".
+        $dontGeolocate = TRUE;
+      }
+    }
+    return $dontGeolocate;
   }
 
 }

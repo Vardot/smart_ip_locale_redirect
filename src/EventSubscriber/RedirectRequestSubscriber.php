@@ -17,7 +17,6 @@ use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Routing\RequestContext;
-use Drupal\smart_ip_maxmind_geoip2_web_service\WebServiceUtility;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\smart_ip\SmartIp;
 
