@@ -204,7 +204,7 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
       }
 
       if ($request->getPathInfo() == '/' || $request->getPathInfo() == '') {
-        $url = Url::fromUri('/' . $langcode . $path)->toString();
+        $url = Url::fromUri('base:' . $langcode . $path)->toString();
       }
       else {
         $url = '/' . $langcode . \Drupal::service('path.alias_manager')->getAliasByPath($path, $langcode);
