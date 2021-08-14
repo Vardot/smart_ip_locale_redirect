@@ -6,7 +6,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Path\AliasManagerInterface;
+use Drupal\path_alias\AliasManagerInterface;
 use Drupal\Core\PathProcessor\InboundPathProcessorInterface;
 use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Core\Url;
@@ -42,7 +42,7 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
   /**
    * The default alias manager implementation.
    *
-   * @var \Drupal\Core\Path\AliasManager
+   * @var \Drupal\path_alias\AliasManager
    */
   protected $aliasManager;
 
