@@ -2,13 +2,15 @@
 
 namespace Drupal\smart_ip_locale_redirect;
 
+use Symfony\Component\Routing\RouterInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Drupal\Core\Routing\RouteObjectInterface;
+use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Core\Access\AccessManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\State\StateInterface;
-use Symfony\Cmf\Component\Routing\RouteObjectInterface;
-use Symfony\Cmf\Component\Routing\RouteProviderInterface;
-use Symfony\Component\HttpFoundation\Request;
+use Drupal\Core\Path\PathValidatorInterface;
 
 /**
  * Helper class to check the requests that should be redirected.
@@ -51,6 +53,20 @@ class RedirectChecker {
   protected $routeProvider;
 
   /**
+   * The router service.
+   *
+   * @var \Symfony\Component\Routing\RouterInterface
+   */
+  protected $router;
+
+  /**
+   * The path validator service.
+   *
+   * @var \Drupal\Core\Path\PathValidatorInterface
+   */
+  protected $pathValidator;
+
+  /**
    * Constructs a RedirectChecker instance.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -63,13 +79,19 @@ class RedirectChecker {
    *   The account interface which represents the current user.
    * @param \Drupal\Core\Routing\RouteProviderInterface $route_provider
    *   The router provider interface.
+   * @param \Symfony\Component\Routing\RouterInterface $router
+   *   The router service.
+   * @param \Drupal\Core\Path\PathValidatorInterface $path_validator
+   *   The path validator service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, StateInterface $state, AccessManager $access_manager, AccountInterface $account, RouteProviderInterface $route_provider) {
+  public function __construct(ConfigFactoryInterface $config_factory, StateInterface $state, AccessManager $access_manager, AccountInterface $account, RouteProviderInterface $route_provider, RouterInterface $router, PathValidatorInterface $path_validator) {
     $this->configFactory = $config_factory;
     $this->accessManager = $access_manager;
     $this->state = $state;
     $this->account = $account;
     $this->routeProvider = $route_provider;
+    $this->router = $router;
+    $this->pathValidator = $path_validator;
   }
 
   /**
@@ -99,10 +121,9 @@ class RedirectChecker {
       $route = $request->attributes->get(RouteObjectInterface::ROUTE_OBJECT);
     }
 
-    $url_object = \Drupal::service('path.validator')->getUrlIfValid($request->getPathInfo());
+    $url_object = $this->pathValidator->getUrlIfValid($request->getPathInfo());
     if ($url_object) {
-      $router = \Drupal::service('router.no_access_checks');
-      $result = $router->match(urldecode($request->getPathInfo()));
+      $result = $this->router->match(urldecode($request->getPathInfo()));
       if (isset($result['_disable_route_normalizer']) && $result['_disable_route_normalizer']) {
         // Do not redirect if the route
         // has _disable_route_normalizer set to TRUE.

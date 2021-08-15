@@ -16,10 +16,13 @@ use Drupal\Core\PathProcessor\InboundPathProcessorInterface;
 use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Core\Url;
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\PageCache\ResponsePolicy\KillSwitch;
+use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\path_alias\AliasManagerInterface;
 use Drupal\smart_ip\SmartIp;
 use Drupal\redirect\Exception\RedirectLoopException;
 use Drupal\smart_ip_locale_redirect\RedirectChecker;
+
 
 /**
  * Redirect subscriber for controller requests.
@@ -83,6 +86,20 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
   protected $pathProcessor;
 
   /**
+   * Kill Switch for page caching.
+   *
+   * @var \Drupal\Core\PageCache\ResponsePolicy\KillSwitch
+   */
+  protected $killSwitch;
+
+  /**
+   * Logger Channel Factory.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactory
+   */
+  protected $loggerFactory;
+
+  /**
    * Constructs a RedirectRequestSubscriber object.
    *
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
@@ -101,8 +118,12 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
    *   Request context.
    * @param \Drupal\Core\PathProcessor\InboundPathProcessorInterface $path_processor
    *   A path processor manager for resolving the system path.
+   * @param \Drupal\Core\PageCache\ResponsePolicy\KillSwitch $kill_switch
+   *   A Kill Switch for page caching.
+   * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
+   *   A Logger Channel Factory.
    */
-  public function __construct(LanguageManagerInterface $language_manager, ConfigFactoryInterface $config, AliasManagerInterface $alias_manager, ModuleHandlerInterface $module_handler, EntityTypeManagerInterface $entity_type_manager, RedirectChecker $checker, RequestContext $context, InboundPathProcessorInterface $path_processor) {
+  public function __construct(LanguageManagerInterface $language_manager, ConfigFactoryInterface $config, AliasManagerInterface $alias_manager, ModuleHandlerInterface $module_handler, EntityTypeManagerInterface $entity_type_manager, RedirectChecker $checker, RequestContext $context, InboundPathProcessorInterface $path_processor, KillSwitch $kill_switch, LoggerChannelFactory $logger_factory) {
     $this->languageManager = $language_manager;
     $this->config = $config->get('smart_ip_locale_redirect.settings');
     $this->aliasManager = $alias_manager;
@@ -111,6 +132,8 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
     $this->checker = $checker;
     $this->context = $context;
     $this->pathProcessor = $path_processor;
+    $this->killSwitch = $kill_switch;
+    $this->loggerFactory = $logger_factory;
   }
 
   /**
@@ -162,15 +185,15 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
     $this->context->fromRequest($request);
 
     try {
-      $languages = array_keys(\Drupal::languageManager()->getLanguages());
-      $current_language_id = \Drupal::languageManager()->getCurrentLanguage()->getId();
+      $languages = array_keys($this->languageManager->getLanguages());
+      $current_language_id = $this->languageManager->getCurrentLanguage()->getId();
       $default_language = 'en-us';
       $langcode = $default_language;
       // Disable caching for this page. This only happens when negotiating
       // based on IP. Once the redirect took place to the correct domain
       // or language prefix, this function is not reached anymore and
       // caching works as expected.
-      \Drupal::service('page_cache_kill_switch')->trigger();
+      $this->killSwitch->trigger();
 
       // Set the cookie based on the configuration.
       $cookie_settings = $this->config->get('cookie_settings') ?: [];
@@ -211,11 +234,11 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
         // ar-jo => ar.
         $old_prefix = substr($langcode, 0, 2);
         // ar-jo => jo.
-        $old_suffix = substr($langcode, 2);
+        // $old_suffix = substr($langcode, 2);
         // en-us => en.
         $new_prefix = substr($current_language_id, 0, 2);
         // en-us  => us.
-        $new_suffix = substr($current_language_id, 2);
+        // $new_suffix = substr($current_language_id, 2);
         // To check if the request has language prefix.
         if ($old_prefix != $new_prefix && in_array(explode('/', $request->getPathInfo())[1], $languages)) {
           // ar-jo becomes en-jo.
@@ -240,7 +263,7 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
         $url = Url::fromUri('base:' . $langcode . $path)->toString() . '?' . $query;
       }
       else {
-        $url = '/' . $langcode . \Drupal::service('path.alias_manager')->getAliasByPath($path, $langcode);
+        $url = '/' . $langcode . $this->aliasManager->getAliasByPath($path, $langcode);
         // Check if there is a query string then reserve it.
         if (!empty($query)) {
           $url = $url . '?' . $query;
@@ -252,7 +275,7 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
         '%path' => $e->getPath(),
         '%rid' => $e->getRedirectId(),
       ];
-      \Drupal::logger('smart_ip_locale_redirect')->warning('Redirect loop identified at %path for redirect %rid', $path_rid);
+      $this->loggerFactory->get('smart_ip_locale_redirect')->warning('Redirect loop identified at %path for redirect %rid', $path_rid);
       $response->setStatusCode(503);
       $response->setContent('Service unavailable');
       $event->setResponse($response);

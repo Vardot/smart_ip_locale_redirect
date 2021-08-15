@@ -1,9 +1,9 @@
 services:
   smart_ip_locale_redirect.request_subscriber:
     class: Drupal\smart_ip_locale_redirect\EventSubscriber\RedirectRequestSubscriber
-    arguments: ['@language_manager', '@config.factory', '@path_alias.manager', '@module_handler', '@entity_type.manager', '@smart_ip_locale_redirect.checker', '@router.request_context', '@path_processor_manager']
+    arguments: ['@language_manager', '@config.factory', '@path_alias.manager', '@module_handler', '@entity_type.manager', '@smart_ip_locale_redirect.checker', '@router.request_context', '@path_processor_manager', '@page_cache_kill_switch', '@logger.factory']
     tags:
       - { name: event_subscriber }
   smart_ip_locale_redirect.checker:
     class: Drupal\smart_ip_locale_redirect\RedirectChecker
-    arguments: ['@config.factory', '@state', '@access_manager', '@current_user', '@router.route_provider']
+    arguments: ['@config.factory', '@access_manager', '@state', '@current_user', '@router.route_provider', '@router.no_access_checks', '@path.validator']
