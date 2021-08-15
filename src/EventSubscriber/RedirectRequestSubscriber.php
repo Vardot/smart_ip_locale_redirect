@@ -259,11 +259,12 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
       }
 
       $query = $request->getQueryString();
+      $origin_url = $request->getSchemeAndHttpHost() . $request->getBaseUrl();
       if ($request->getPathInfo() == '/' || $request->getPathInfo() == '') {
-        $url = Url::fromUri('base:' . $langcode . $path)->toString() . '?' . $query;
+        $url = $origin_url . '/' . $langcode . $path . '?' . $query;
       }
       else {
-        $url = '/' . $langcode . $this->aliasManager->getAliasByPath($path, $langcode);
+        $url = $origin_url . '/' . $langcode . $this->aliasManager->getAliasByPath($path, $langcode);
         // Check if there is a query string then reserve it.
         if (!empty($query)) {
           $url = $url . '?' . $query;
