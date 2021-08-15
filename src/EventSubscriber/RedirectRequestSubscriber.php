@@ -2,20 +2,21 @@
 
 namespace Drupal\smart_ip_locale_redirect\EventSubscriber;
 
-use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\path_alias\AliasManagerInterface;
-use Drupal\Core\PathProcessor\InboundPathProcessorInterface;
-use Drupal\Core\Routing\TrustedRedirectResponse;
-use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Routing\RequestContext;
+use Symfony\Component\HttpFoundation\Cookie;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\PathProcessor\InboundPathProcessorInterface;
+use Drupal\Core\Routing\TrustedRedirectResponse;
+use Drupal\Core\Url;
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\path_alias\AliasManagerInterface;
 use Drupal\smart_ip\SmartIp;
 use Drupal\redirect\Exception\RedirectLoopException;
 use Drupal\smart_ip_locale_redirect\RedirectChecker;
@@ -136,6 +137,7 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
     // the system module alters both the path and the request; only the
     // changes to the request will be propagated, while the change to the
     // path will be lost.
+    $response = new Response();
     $request = clone $event->getRequest();
     if (!$this->checker->canRedirect($request)) {
       return;
@@ -179,7 +181,8 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
       $update_hl = $request->get('update_hl');
       if (isset($update_hl) && $update_hl != '') {
         $langcode = $update_hl;
-        setcookie('smart_ip_hl', $langcode, time() + $cookie_duration, $cookie_path, $cookie_domain);
+        $cookie = new Cookie('smart_ip_hl', $langcode, time() + $cookie_duration, $cookie_path, $cookie_domain, TRUE);
+        $response->headers->setCookie($cookie);
       }
 
       if ($request->cookies->get('smart_ip_hl')) {
@@ -228,7 +231,8 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
             }
           }
         }
-        setcookie('smart_ip_hl', $langcode, time() + $cookie_duration, $cookie_path, $cookie_domain);
+        $cookie = new Cookie('smart_ip_hl', $langcode, time() + $cookie_duration, $cookie_path, $cookie_domain, TRUE);
+        $response->headers->setCookie($cookie);
       }
 
       $query = $request->getQueryString();
@@ -249,7 +253,6 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
         '%rid' => $e->getRedirectId(),
       ];
       \Drupal::logger('smart_ip_locale_redirect')->warning('Redirect loop identified at %path for redirect %rid', $path_rid);
-      $response = new Response();
       $response->setStatusCode(503);
       $response->setContent('Service unavailable');
       $event->setResponse($response);
