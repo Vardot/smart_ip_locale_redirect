@@ -1,0 +1,29 @@
+{
+  "name": "drupal/smart_ip_locale_redirect",
+  "description": "Overrides language negotiation and redirects users to a languge depending on their IP.",
+  "type": "drupal-module",
+  "homepage": "https://www.drupal.org/project/smart_ip_locale_redirect",
+  "license": "GPL-2.0-or-later",
+  "minimum-stability": "dev",
+  "authors": [
+    {
+      "name": "Vardot",
+      "homepage": "https://www.drupal.org/vardot",
+      "role": "Maintainer"
+    }
+  ],
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/smart_ip_locale_redirect",
+    "source": "http://cgit.drupalcode.org/smart_ip_locale_redirect"
+  },
+  "repositories": {
+    "drupal": {
+      "type": "composer",
+      "url": "https://packages.drupal.org/8"
+    }
+  },
+  "require": {
+    "drupal/smart_ip": "~3.0 || ~4.0",
+    "drupal/redirect": "~1.0"
+  }
+}

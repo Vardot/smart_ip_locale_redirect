@@ -84,7 +84,8 @@ class RedirectChecker {
    *   TRUE if redirect may be performed.
    */
   public function canRedirect(Request $request, $route_name = NULL) {
-    // If the user role is NOT in the roles to geolocate then exit and do nothing.
+    // If the user role is NOT in the roles to geolocate
+    // then exit and do nothing.
     if (!$this->isRoleToGeoLocate()) {
       return FALSE;
     }
@@ -101,9 +102,10 @@ class RedirectChecker {
     $url_object = \Drupal::service('path.validator')->getUrlIfValid($request->getPathInfo());
     if ($url_object) {
       $router = \Drupal::service('router.no_access_checks');
-      $result = $router->match($request->getPathInfo());
+      $result = $router->match(urldecode($request->getPathInfo()));
       if (isset($result['_disable_route_normalizer']) && $result['_disable_route_normalizer']) {
-        // Do not redirect if the route has _disable_route_normalizer set to TRUE.
+        // Do not redirect if the route
+        // has _disable_route_normalizer set to TRUE.
         $can_redirect = FALSE;
       }
       elseif ($result['_route_object']->getOption('_admin_route') == 1) {
@@ -146,7 +148,8 @@ class RedirectChecker {
    * Check if the user role in the smart ip roles to geolocate setting.
    *
    * @return bool
-   *   TRUE to redirect the user to the locale language otherwise do not geolocate.
+   *   TRUE to redirect the user to the locale language
+   *   otherwise do not geolocate.
    */
   public function isRoleToGeoLocate() {
     $dontGeolocate  = FALSE;

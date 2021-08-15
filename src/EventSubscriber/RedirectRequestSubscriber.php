@@ -10,15 +10,15 @@ use Drupal\path_alias\AliasManagerInterface;
 use Drupal\Core\PathProcessor\InboundPathProcessorInterface;
 use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Core\Url;
-use Drupal\redirect\Exception\RedirectLoopException;
-use Drupal\smart_ip_locale_redirect\RedirectChecker;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Routing\RequestContext;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\smart_ip\SmartIp;
+use Drupal\redirect\Exception\RedirectLoopException;
+use Drupal\smart_ip_locale_redirect\RedirectChecker;
 
 /**
  * Redirect subscriber for controller requests.
@@ -42,7 +42,7 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
   /**
    * The default alias manager implementation.
    *
-   * @var \Drupal\path_alias\AliasManager
+   * @var \Drupal\path_alias\AliasManagerInterface
    */
   protected $aliasManager;
 
@@ -82,13 +82,13 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
   protected $pathProcessor;
 
   /**
-   * Constructs a \Drupal\vardot_tweaks\EventSubscriber\RedirectRequestSubscriber object.
+   * Constructs a RedirectRequestSubscriber object.
    *
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager service.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config
    *   The config.
-   * @param \Drupal\Core\Path\AliasManagerInterface $alias_manager
+   * @param \Drupal\path_alias\AliasManagerInterface $alias_manager
    *   The alias manager service.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler service.
@@ -126,11 +126,10 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
   /**
    * Handles the redirect if any found.
    *
-   * @param \Symfony\Component\HttpKernel\Event\GetResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\RequestEvent $event
    *   The event to process.
    */
-  public function onKernelRequestCheckRedirect(GetResponseEvent $event) {
-
+  public function onKernelRequestCheckRedirect(RequestEvent $event) {
     // Get a clone of the request. During inbound processing the request
     // can be altered. Allowing this here can lead to unexpected behavior.
     // For example the path_processor.files inbound processor provided by
@@ -161,9 +160,10 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
     $this->context->fromRequest($request);
 
     try {
-      $language_interface = \Drupal::languageManager()->getCurrentLanguage();
-      $current_language_id = $language_interface->getId();
-      $langcode = $current_language_id;
+      $languages = array_keys(\Drupal::languageManager()->getLanguages());
+      $current_language_id = \Drupal::languageManager()->getCurrentLanguage()->getId();
+      $default_language = 'en-us';
+      $langcode = $default_language;
       // Disable caching for this page. This only happens when negotiating
       // based on IP. Once the redirect took place to the correct domain
       // or language prefix, this function is not reached anymore and
@@ -172,9 +172,9 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
 
       // Set the cookie based on the configuration.
       $cookie_settings = $this->config->get('cookie_settings') ?: [];
-      $cookie_duration = $cookie_settings['duration'] ?: 432000;
-      $cookie_path = $cookie_settings['path'] ?: '/';
-      $cookie_domain = $cookie_settings['domain'] ?: '';
+      $cookie_duration = isset($cookie_settings['duration']) ?: 432000;
+      $cookie_path = isset($cookie_settings['path']) ?: '/';
+      $cookie_domain = isset($cookie_settings['domain']) ?: '';
 
       $update_hl = $request->get('update_hl');
       if (isset($update_hl) && $update_hl != '') {
@@ -197,26 +197,58 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
           }
         }
 
-        setcookie('smart_ip_hl', $langcode, time() + $cookie_duration, $cookie_path, $cookie_domain);
       }
+
       if ($current_language_id == $langcode && ($request->getPathInfo() != '/' && $request->getPathInfo() != '')) {
+        // Exit the loop to prevent too many redirects error.
         return;
       }
 
+      if ($request->getPathInfo() != '/' && $update_hl == '') {
+        // ar-jo => ar.
+        $old_prefix = substr($langcode, 0, 2);
+        // ar-jo => jo.
+        $old_suffix = substr($langcode, 2);
+        // en-us => en.
+        $new_prefix = substr($current_language_id, 0, 2);
+        // en-us  => us.
+        $new_suffix = substr($current_language_id, 2);
+        // To check if the request has language prefix.
+        if ($old_prefix != $new_prefix && in_array(explode('/', $request->getPathInfo())[1], $languages)) {
+          // ar-jo becomes en-jo.
+          $replaced_langcode = substr_replace($langcode, $new_prefix, 0, 2);
+          if (in_array($replaced_langcode, $languages)) {
+            $langcode = $replaced_langcode;
+          }
+          else {
+            // In case en-us there is no ar-us so redirect to ar.
+            $new_langcode = substr($replaced_langcode, 0, 2);
+            if (in_array($new_langcode, $languages)) {
+              $langcode = $new_langcode;
+            }
+          }
+        }
+        setcookie('smart_ip_hl', $langcode, time() + $cookie_duration, $cookie_path, $cookie_domain);
+      }
+
+      $query = $request->getQueryString();
       if ($request->getPathInfo() == '/' || $request->getPathInfo() == '') {
-        $url = Url::fromUri('base:' . $langcode . $path)->toString();
+        $url = Url::fromUri('base:' . $langcode . $path)->toString() . '?' . $query;
       }
       else {
-        $url = '/' . $langcode . \Drupal::service('path_alias.manager')->getAliasByPath($path, $langcode);
+        $url = '/' . $langcode . \Drupal::service('path.alias_manager')->getAliasByPath($path, $langcode);
         // Check if there is a query string then reserve it.
-        $query = $request->getQueryString();
         if (!empty($query)) {
           $url = $url . '?' . $query;
         }
       }
     }
     catch (RedirectLoopException $e) {
-      \Drupal::logger('smart_ip_locale_redirect')->warning('Redirect loop identified at %path for redirect %rid', ['%path' => $e->getPath(), '%rid' => $e->getRedirectId()]);
+      $path_rid = [
+        '%path' => $e->getPath(),
+        '%rid' => $e->getRedirectId(),
+      ];
+      \Drupal::logger('smart_ip_locale_redirect')->warning('Redirect loop identified at %path for redirect %rid', $path_rid);
       $response = new Response();
       $response->setStatusCode(503);
       $response->setContent('Service unavailable');

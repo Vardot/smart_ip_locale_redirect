@@ -1,0 +1,22 @@
+{
+  "name": "smart_ip_locale_redirect",
+  "description": "Overrides language negotiation and redirects users to a languge depending on their IP.",
+  "license": "GPL-2.0",
+  "private": true,
+  "engines": {
+    "yarn": ">= 1.6",
+    "node": ">= 8.11"
+  },
+  "keywords": [
+    "Drupal",
+    "Smart IP",
+    "Locale"
+  ],
+  "author": "Vardot",
+  "scripts": {
+    "phpcs": "phpcs --standard=./.phpcs.xml .",
+    "phpcbf": "phpcbf --standard=./.phpcs.xml ."
+  },
+  "dependencies": {  },
+  "devDependencies": {  }
+}

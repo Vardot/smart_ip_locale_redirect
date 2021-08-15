@@ -8,7 +8,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Url;
 
 /**
- * Class AdminForm.
+ * Configure the browser language negotiation method for this site.
  */
 class AdminForm extends ConfigFormBase {
 
@@ -117,7 +117,6 @@ class AdminForm extends ConfigFormBase {
     $form['new_mapping'] = [
       '#type' => 'details',
       '#title' => $this->t('Add a new mapping'),
-      '#open' => TRUE,
       '#tree' => TRUE,
     ];
     $form['new_mapping']['country_code'] = [
@@ -129,30 +128,6 @@ class AdminForm extends ConfigFormBase {
       '#type' => 'select',
       '#title' => $this->t('Site language'),
       '#options' => $language_options,
-    ];
-    $form['cookie_settings'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Cookie parameter settings'),
-      '#open' => TRUE,
-      '#tree' => TRUE,
-    ];
-    $form['cookie_settings']['duration'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Cookie duration'),
-      '#default_value' => $config->get('cookie_settings')['duration'],
-      '#description' => $this->t('The duration the cookie expires. This is the number of seconds from the currentt time, the default value is 5 days: 432000 .'),
-    ];
-    $form['cookie_settings']['path'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Cookie path'),
-      '#default_value' => $config->get('cookie_settings')['path'],
-      '#description' => $this->t('The cookie available server path, the default value is /.'),
-    ];
-    $form['cookie_settings']['domain'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Cookie domain'),
-      '#default_value' => $config->get('cookie_settings')['domain'],
-      '#description' => $this->t('The cookie domain scope.'),
     ];
     $form['excluded_user_agents'] = [
       '#type' => 'textarea',
@@ -170,6 +145,7 @@ class AdminForm extends ConfigFormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     // Array to check if all browser language codes are unique.
     $unique_values = [];
+    $mappings = [];
 
     // Check all mappings.
     if ($form_state->hasValue('mappings')) {
@@ -182,30 +158,25 @@ class AdminForm extends ConfigFormBase {
       foreach ($mappings as $key => $data) {
         // Make sure country_code is unique.
         if (array_key_exists($data['country_code'], $unique_values)) {
-          $form_state->setErrorByName('mappings][new_mapping][country_code', $this->t('Country codes must be unique.'));
+          $form_state->setErrorByName('mappings][' . $key . '][country_code', $this->t('Country codes must be unique.'));
         }
         elseif (preg_match('/[^a-z\-]/', $data['country_code'])) {
-          $form_state->setErrorByName('mappings][new_mapping][country_code', $this->t('Country codes can only contain lowercase letters and a hyphen(-).'));
+          $form_state->setErrorByName('mappings][' . $key . '][country_code', $this->t('Country codes can only contain lowercase letters and a hyphen(-).'));
         }
         $unique_values[$data['country_code']] = $data['drupal_langcode'];
       }
     }
 
-    $cookie_duration = $form_state->getValue('cookie_settings')['duration'];
-    if (!empty($cookie_duration) && !is_numeric($cookie_duration)) {
-      $form_state->setErrorByName('cookie_settings][duration', $this->t('Cookie duration can only contain numbers.'));
-    }
-
     // Check new mapping.
-    $data = $form_state->getValue('new_mapping');
+    $new_data = $form_state->getValue('new_mapping');
 
-    if (!empty($data['country_code'])) {
+    if (!empty($new_data['country_code'])) {
       // Make sure country_code is unique.
-      if (array_key_exists($data['country_code'], $unique_values)) {
-        $form_state->setErrorByName('mappings][' . $key . '][country_code', $this->t('Country codes must be unique.'));
+      if (array_key_exists($new_data['country_code'], $unique_values)) {
+        $form_state->setErrorByName('mappings][' . $new_data['country_code'] . '][country_code', $this->t('Country codes must be unique.'));
       }
-      elseif (preg_match('/[^a-z\-]/', $data['country_code'])) {
-        $form_state->setErrorByName('mappings][' . $key . '][country_code', $this->t('Country codes can only contain lowercase letters and a hyphen(-).'));
+      elseif (preg_match('/[^a-z\-]/', $new_data['country_code'])) {
+        $form_state->setErrorByName('mappings][' . $new_data['country_code'] . '][country_code', $this->t('Country codes can only contain lowercase letters and a hyphen(-).'));
       }
     }
   }
@@ -225,12 +196,9 @@ class AdminForm extends ConfigFormBase {
       $mappings[$new_mapping['country_code']] = $new_mapping['drupal_langcode'];
     }
 
-    $cookie_settings = $form_state->getValue('cookie_settings') ?: [];
-
     $this->config('smart_ip_locale_redirect.settings')
       ->set('excluded_user_agents', $form_state->getValue('excluded_user_agents'))
       ->set('mappings', $mappings)
-      ->set('cookie_settings', $cookie_settings)
       ->save();
     parent::submitForm($form, $form_state);
   }

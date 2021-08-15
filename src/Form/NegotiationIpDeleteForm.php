@@ -31,7 +31,7 @@ class NegotiationIpDeleteForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return $this->t('Are you sure you want to delete %country_code?', ['%country_code' => $this->country_code]);
+    return $this->t('Are you sure you want to delete %country_code?', ['%country_code' => $this->browserLangcode]);
   }
 
   /**
@@ -52,7 +52,7 @@ class NegotiationIpDeleteForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $country_code = NULL) {
-    $this->country_code = $country_code;
+    $this->browserLangcode = $country_code;
 
     $form = parent::buildForm($form, $form_state);
 
@@ -64,13 +64,13 @@ class NegotiationIpDeleteForm extends ConfirmFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $mappings = $this->config('smart_ip_locale_redirect.settings')->get('mappings');
-    unset($mappings[$this->country_code]);
+    unset($mappings[$this->browserLangcode]);
 
     $this->config('smart_ip_locale_redirect.settings')
       ->set('mappings', $mappings)
       ->save();
     $args = [
-      '%country_code' => $this->country_code,
+      '%country_code' => $this->browserLangcode,
     ];
 
     $this->logger('language')->notice('The country code language detection mapping for the %country_code language code has been deleted.', $args);
