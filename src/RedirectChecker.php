@@ -84,7 +84,7 @@ class RedirectChecker {
    * @param \Drupal\Core\Path\PathValidatorInterface $path_validator
    *   The path validator service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, StateInterface $state, AccessManager $access_manager, AccountInterface $account, RouteProviderInterface $route_provider, RouterInterface $router, PathValidatorInterface $path_validator) {
+  public function __construct(ConfigFactoryInterface $config_factory, AccessManager $access_manager, StateInterface $state, AccountInterface $account, RouteProviderInterface $route_provider, RouterInterface $router, PathValidatorInterface $path_validator) {
     $this->configFactory = $config_factory;
     $this->accessManager = $access_manager;
     $this->state = $state;
