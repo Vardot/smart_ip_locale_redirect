@@ -114,13 +114,6 @@ class RedirectChecker {
 
     $can_redirect = TRUE;
 
-    if (isset($route_name)) {
-      $route = $this->routeProvider->getRouteByName($route_name);
-    }
-    else {
-      $route = $request->attributes->get(RouteObjectInterface::ROUTE_OBJECT);
-    }
-
     $url_object = $this->pathValidator->getUrlIfValid($request->getPathInfo());
     if ($url_object) {
       $result = $this->router->match(urldecode($request->getPathInfo()));
