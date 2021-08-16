@@ -71,10 +71,10 @@ class RedirectChecker {
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The interface for the state system.
-   * @param \Drupal\Core\State\StateInterface $state
-   *   The interface for the state system.
    * @param \Drupal\Core\Access\AccessManager $access_manager
    *   The AccessManager access checker service.
+   * @param \Drupal\Core\State\StateInterface $state
+   *   The interface for the state system.
    * @param \Drupal\Core\Session\AccountInterface $account
    *   The account interface which represents the current user.
    * @param \Drupal\Core\Routing\RouteProviderInterface $route_provider

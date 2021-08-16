@@ -14,7 +14,6 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\PathProcessor\InboundPathProcessorInterface;
 use Drupal\Core\Routing\TrustedRedirectResponse;
-use Drupal\Core\Url;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\PageCache\ResponsePolicy\KillSwitch;
 use Drupal\Core\Logger\LoggerChannelFactory;
@@ -22,7 +21,6 @@ use Drupal\path_alias\AliasManagerInterface;
 use Drupal\smart_ip\SmartIp;
 use Drupal\redirect\Exception\RedirectLoopException;
 use Drupal\smart_ip_locale_redirect\RedirectChecker;
-
 
 /**
  * Redirect subscriber for controller requests.
@@ -187,7 +185,7 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
     try {
       $languages = array_keys($this->languageManager->getLanguages());
       $current_language_id = $this->languageManager->getCurrentLanguage()->getId();
-      $default_language = 'en-us';
+      $default_language = $this->languageManager->getDefaultLanguage()->getId();
       $langcode = $default_language;
       // Disable caching for this page. This only happens when negotiating
       // based on IP. Once the redirect took place to the correct domain
@@ -208,8 +206,9 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
         $response->headers->setCookie($cookie);
       }
 
-      if ($request->cookies->get('smart_ip_hl')) {
-        $langcode = $request->cookies->get('smart_ip_hl');
+      $cookie_smart_ip_hl = $request->cookies->get('smart_ip_hl');
+      if (isset($cookie_smart_ip_hl)) {
+        $langcode = $cookie_smart_ip_hl->getId();
       }
       else {
         $countries = $this->config->get('mappings') ?: [];
@@ -261,14 +260,15 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
       $query = $request->getQueryString();
       $origin_url = $request->getSchemeAndHttpHost() . $request->getBaseUrl();
       if ($request->getPathInfo() == '/' || $request->getPathInfo() == '') {
-        $url = $origin_url . '/' . $langcode . $path . '?' . $query;
+        $url = $origin_url . '/' . $langcode . $path;
       }
       else {
         $url = $origin_url . '/' . $langcode . $this->aliasManager->getAliasByPath($path, $langcode);
-        // Check if there is a query string then reserve it.
-        if (!empty($query)) {
-          $url = $url . '?' . $query;
-        }
+      }
+
+      // Check if there is a query string then reserve it.
+      if (!empty($query)) {
+        $url = $url . '?' . $query;
       }
     }
     catch (RedirectLoopException $e) {
