@@ -17,6 +17,7 @@ use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\PageCache\ResponsePolicy\KillSwitch;
 use Drupal\Core\Logger\LoggerChannelFactory;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\path_alias\AliasManagerInterface;
 use Drupal\smart_ip\SmartIp;
 use Drupal\redirect\Exception\RedirectLoopException;
@@ -91,9 +92,9 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
   protected $killSwitch;
 
   /**
-   * Logger Channel Factory.
+   * Logger Channel Factory interface.
    *
-   * @var \Drupal\Core\Logger\LoggerChannelFactory
+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
    */
   protected $loggerFactory;
 
@@ -118,10 +119,10 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
    *   A path processor manager for resolving the system path.
    * @param \Drupal\Core\PageCache\ResponsePolicy\KillSwitch $kill_switch
    *   A Kill Switch for page caching.
-   * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   A Logger Channel Factory.
    */
-  public function __construct(LanguageManagerInterface $language_manager, ConfigFactoryInterface $config, AliasManagerInterface $alias_manager, ModuleHandlerInterface $module_handler, EntityTypeManagerInterface $entity_type_manager, RedirectChecker $checker, RequestContext $context, InboundPathProcessorInterface $path_processor, KillSwitch $kill_switch, LoggerChannelFactory $logger_factory) {
+  public function __construct(LanguageManagerInterface $language_manager, ConfigFactoryInterface $config, AliasManagerInterface $alias_manager, ModuleHandlerInterface $module_handler, EntityTypeManagerInterface $entity_type_manager, RedirectChecker $checker, RequestContext $context, InboundPathProcessorInterface $path_processor, KillSwitch $kill_switch, LoggerChannelFactoryInterface $logger_factory) {
     $this->languageManager = $language_manager;
     $this->config = $config->get('smart_ip_locale_redirect.settings');
     $this->aliasManager = $alias_manager;
