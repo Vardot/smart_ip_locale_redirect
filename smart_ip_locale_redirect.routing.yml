@@ -1,18 +1,18 @@
 smart_ip_locale_redirect.smart_ip_locale_redirect_admin_form:
-  path: '/admin/config/search/smart_ip_locale_redirect'
+  path: "/admin/config/search/smart_ip_locale_redirect"
   defaults:
     _form: '\Drupal\smart_ip_locale_redirect\Form\AdminForm'
-    _title: 'Smart IP Locale Redirect Settings'
+    _title: "Smart IP Locale Redirect Settings"
   requirements:
-    _permission: 'access smart IP locale redirect settings'
+    _permission: "access smart IP locale redirect settings"
   options:
     _admin_route: TRUE
 smart_ip_locale_redirect.negotiation_ip_delete:
-  path: '/admin/config/search/smart_ip_locale_redirect/delete/{country_code}'
+  path: "/admin/config/search/smart_ip_locale_redirect/delete/{country_code}"
   defaults:
     _form: '\Drupal\smart_ip_locale_redirect\Form\NegotiationIpDeleteForm'
-    _title: 'Delete'
+    _title: "Delete"
   requirements:
-    _permission: 'access smart IP locale redirect settings'
+    _permission: "access smart IP locale redirect settings"
   options:
     _admin_route: TRUE

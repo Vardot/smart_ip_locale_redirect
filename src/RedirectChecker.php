@@ -4,7 +4,6 @@ namespace Drupal\smart_ip_locale_redirect;
 
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Drupal\Core\Routing\RouteObjectInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Core\Access\AccessManager;
 use Drupal\Core\Config\ConfigFactoryInterface;

@@ -1,7 +1,7 @@
-name: 'Smart IP Redirect to Locale (with Cookie)'
+name: "Smart IP Redirect to Locale (with Cookie)"
 type: module
-description: 'Overrides language negotiation and redirects users to a languge depending on their IP.'
-package: 'Location'
+description: "Overrides language negotiation and redirects users to a languge depending on their IP."
+package: "Location"
 core_version_requirement: ^8 || ^9
 dependencies:
   - drupal:path_alias
