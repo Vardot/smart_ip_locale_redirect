@@ -4,7 +4,7 @@ namespace Drupal\smart_ip_locale_redirect\EventSubscriber;
 
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\HttpFoundation\Cookie;
@@ -149,10 +149,10 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
   /**
    * Handles the redirect if any found.
    *
-   * @param \Symfony\Component\HttpKernel\Event\GetResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\RequestEvent $event
    *   The event to process.
    */
-  public function onKernelRequestCheckRedirect(GetResponseEvent $event) {
+  public function onKernelRequestCheckRedirect(RequestEvent $event) {
     // Get a clone of the request. During inbound processing the request
     // can be altered. Allowing this here can lead to unexpected behavior.
     // For example the path_processor.files inbound processor provided by
