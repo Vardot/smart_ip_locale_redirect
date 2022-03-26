@@ -12,7 +12,7 @@ services:
         "@router.request_context",
         "@path_processor_manager",
         "@page_cache_kill_switch",
-        "@logger.factory"
+        "@logger.factory",
       ]
     tags:
       - { name: event_subscriber }
@@ -26,5 +26,5 @@ services:
         "@current_user",
         "@router.route_provider",
         "@router.no_access_checks",
-        "@path.validator"
+        "@path.validator",
       ]
