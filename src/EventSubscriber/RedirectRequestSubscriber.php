@@ -165,7 +165,9 @@ class RedirectRequestSubscriber implements EventSubscriberInterface {
     }
 
     // Get URL info and process it to be used for hash generation.
-    parse_str($request->getQueryString(), $request_query);
+    if (!is_null($request->getQueryString())) {
+      parse_str($request->getQueryString(), $request_query);
+    }
 
     if (strpos($request->getPathInfo(), '/sites/default/files/') === 0) {
       // If the request for a file then do nothing.
